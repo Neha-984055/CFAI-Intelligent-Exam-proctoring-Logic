@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEPL — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #070B14;
+    --surface:   #0D1525;
+    --border:    #1A2640;
+    --blue:      #3B82F6;
+    --blue-glow: rgba(59,130,246,.25);
+    --cyan:      #22D3EE;
+    --red:       #EF4444;
+    --text:      #E2E8F0;
+    --muted:     #64748B;
+    --mono:      'JetBrains Mono', monospace;
+    --sans:      'Space Grotesk', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: var(--sans);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridDrift 20s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes gridDrift {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(40px); }
+  }
+
+  /* Glowing orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    opacity: .35;
+  }
+  .orb-1 { width: 500px; height: 500px; background: #1e40af; top: -150px; left: -150px; animation: float 8s ease-in-out infinite; }
+  .orb-2 { width: 400px; height: 400px; background: #0e7490; bottom: -100px; right: -100px; animation: float 10s ease-in-out infinite reverse; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%       { transform: translateY(-30px) scale(1.05); }
+  }
+
+  .login-wrap {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 460px;
+    padding: 16px;
+  }
+
+  /* Brand header */
+  .brand {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .brand-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 16px;
+    background: linear-gradient(135deg, #1e3a8a, #0e7490);
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 30px rgba(59,130,246,.4);
+    position: relative;
+  }
+  .brand-icon svg { width: 34px; height: 34px; }
+  .brand-icon::after {
+    content: '';
+    position: absolute; inset: -2px;
+    border-radius: 20px;
+    border: 1px solid rgba(59,130,246,.5);
+  }
+  .brand h1 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    line-height: 1.2;
+  }
+  .brand h1 span { color: var(--cyan); }
+  .brand p {
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--muted);
+    letter-spacing: .12em;
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px 32px;
+    box-shadow: 0 0 60px rgba(0,0,0,.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .role-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    background: var(--bg);
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 28px;
+  }
+  .role-tab {
+    padding: 9px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: .875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .role-tab.active {
+    background: linear-gradient(135deg, #1e3a8a, #155e75);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(59,130,246,.3);
+  }
+
+  .form-group { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+  input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: .95rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-glow);
+  }
+  input::placeholder { color: #334155; }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #2563eb, #0891b2);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s, box-shadow .2s;
+    margin-top: 8px;
+    box-shadow: 0 4px 20px rgba(37,99,235,.4);
+    letter-spacing: .02em;
+  }
+  .btn-primary:hover { opacity: .92; box-shadow: 0 6px 28px rgba(37,99,235,.55); }
+  .btn-primary:active { transform: scale(.98); }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0;
+    color: var(--muted);
+    font-size: .78rem;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .demo-credentials {
+    background: rgba(59,130,246,.07);
+    border: 1px dashed rgba(59,130,246,.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .demo-credentials strong { color: var(--cyan); font-weight: 500; }
+
+  .error-msg {
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 8px;
+    padding: 10px 13px;
+    font-size: .83rem;
+    color: #fca5a5;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  .system-status {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    margin-top: 24px;
+    font-family: var(--mono);
+    font-size: .68rem;
+    color: var(--muted);
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .4; }
+  }
+
+  /* Admin-only field */
+  #admin-code-group { display: none; }
+
+  @media (max-width: 480px) {
+    .card { padding: 28px 20px; }
+    .input-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="login-wrap">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="17" cy="13" r="6" stroke="#93c5fd" stroke-width="1.8"/>
+        <circle cx="17" cy="13" r="2.5" fill="#22d3ee"/>
+        <path d="M5 28c0-6.627 5.373-10 12-10s12 3.373 12 10" stroke="#93c5fd" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M26 6l3-3M8 6L5 3M17 4V1" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="26" cy="24" r="5" fill="#0D1525" stroke="#3b82f6" stroke-width="1.5"/>
+        <path d="M24.5 24l1 1 2-2" stroke="#22d3ee" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>Intelligent Exam<br><span>Proctoring Logic</span></h1>
+    <p>Secure · Monitored · Verified</p>
+  </div>
+
+  <div class="card">
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="setRole('student')">Student</button>
+      <button class="role-tab" onclick="setRole('admin')">Examiner</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg">Invalid credentials. Please try again.</div>
+
+    <div class="form-group input-row">
+      <div>
+        <label>Roll / Staff ID</label>
+        <input type="text" id="userId" placeholder="e.g. STU001" autocomplete="off"/>
+      </div>
+      <div>
+        <label>Full Name</label>
+        <input type="text" id="userName" placeholder="Your name"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+
+    <div class="form-group" id="admin-code-group">
+      <label>Examiner Access Code</label>
+      <input type="password" id="adminCode" placeholder="Institute code"/>
+    </div>
+
+    <button class="btn-primary" onclick="doLogin()">Authenticate & Enter</button>
+
+    <div class="divider">demo credentials</div>
+    <div class="demo-credentials">
+      <strong>Student :</strong> ID = STU001 &nbsp;|&nbsp; Pass = exam123<br>
+      <strong>Examiner:</strong> ID = ADMIN01 &nbsp;|&nbsp; Pass = admin123 &nbsp;|&nbsp; Code = IEPL2024
+    </div>
+  </div>
+
+  <div class="system-status">
+    <div class="status-dot"></div>
+    PROCTORING ENGINE ONLINE &nbsp;·&nbsp; v2.4.1
+  </div>
+</div>
+
+<script>
+  let currentRole = 'student';
+
+  function setRole(role) {
+    currentRole = role;
+    document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('admin-code-group').style.display = role === 'admin' ? 'block' : 'none';
+  }
+
+  function doLogin() {
+    const id   = document.getElementById('userId').value.trim();
+    const name = document.getElementById('userName').value.trim();
+    const pass = document.getElementById('password').value;
+    const err  = document.getElementById('errorMsg');
+
+    err.classList.remove('show');
+
+    if (!id || !name || !pass) {
+      err.textContent = 'All fields are required.';
+      err.classList.add('show');
+      return;
+    }
+
+    if (currentRole === 'student') {
+      if (id === 'STU001' && pass === 'exam123') {
+        sessionStorage.setItem('iepl_user', JSON.stringify({ id, name, role: 'student' }));
+        window.location.href = 'exam.html';
+      } else {
+        err.textContent = 'Invalid student credentials.';
+        err.classList.add('show');
+      }
+    } else {
+      const code = document.getElementById('adminCode').value;
+      if (id === 'ADMIN01' && pass === 'admin123' && code === 'IEPL2024') {
+        sessionStorage.setItem('iepl_user', JSON.stringify({ id, name, role: 'admin' }));
+        window.location.href = 'admin.html';
+      } else {
+        err.textContent = 'Invalid examiner credentials or access code.';
+        err.classList.add('show');
+      }
+    }
+  }
+</script>
+</body>
+</html>

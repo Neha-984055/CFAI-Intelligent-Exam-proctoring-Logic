@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEPL — Exam</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #070B14;
+    --surface: #0D1525;
+    --border:  #1A2640;
+    --blue:    #3B82F6;
+    --cyan:    #22D3EE;
+    --green:   #22C55E;
+    --yellow:  #F59E0B;
+    --red:     #EF4444;
+    --text:    #E2E8F0;
+    --muted:   #64748B;
+    --mono:    'JetBrains Mono', monospace;
+    --sans:    'Space Grotesk', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: var(--sans);
+    color: var(--text);
+    min-height: 100vh;
+    user-select: none;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .topbar-logo {
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  .topbar-logo span { color: var(--cyan); }
+  .student-badge {
+    background: rgba(59,130,246,.15);
+    border: 1px solid rgba(59,130,246,.3);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-family: var(--mono);
+    color: #93c5fd;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+  .timer-display {
+    font-family: var(--mono);
+    font-size: 1.35rem;
+    font-weight: 500;
+    letter-spacing: .04em;
+    color: var(--cyan);
+  }
+  .timer-display.warning { color: var(--yellow); animation: blink .8s ease-in-out infinite; }
+  .timer-display.critical { color: var(--red); animation: blink .4s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  /* Threat meter */
+  .threat-wrap { display: flex; align-items: center; gap: 8px; }
+  .threat-label { font-size: .7rem; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+  .threat-bar-outer {
+    width: 100px; height: 8px;
+    background: #1e293b;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .threat-bar-inner {
+    height: 100%;
+    width: 0%;
+    border-radius: 4px;
+    background: var(--green);
+    transition: width .4s, background .4s;
+  }
+  .threat-score {
+    font-family: var(--mono);
+    font-size: .8rem;
+    font-weight: 500;
+    min-width: 28px;
+    color: var(--green);
+    transition: color .4s;
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    height: calc(100vh - 60px);
+  }
+
+  /* ── EXAM AREA ── */
+  .exam-area {
+    padding: 28px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  .exam-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .exam-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .question-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .q-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: .75rem;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .q-btn.current { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,.1); }
+  .q-btn.answered { border-color: var(--green); color: var(--green); background: rgba(34,197,94,.1); }
+  .q-btn.flagged  { border-color: var(--yellow); color: var(--yellow); background: rgba(245,158,11,.1); }
+
+  /* Question card */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 18px;
+  }
+  .q-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .q-num {
+    font-family: var(--mono);
+    font-size: .75rem;
+    color: var(--blue);
+    font-weight: 500;
+    letter-spacing: .06em;
+  }
+  .q-marks {
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--muted);
+    background: rgba(255,255,255,.04);
+    padding: 3px 9px;
+    border-radius: 6px;
+  }
+  .q-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 22px;
+    font-weight: 500;
+  }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .15s;
+    font-size: .93rem;
+  }
+  .option-label:hover { border-color: var(--blue); background: rgba(59,130,246,.06); }
+  .option-label input { display: none; }
+  .option-label.selected {
+    border-color: var(--blue);
+    background: rgba(59,130,246,.12);
+    color: #93c5fd;
+  }
+  .option-letter {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: .72rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .option-label.selected .option-letter {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  .exam-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .btn { padding: 10px 20px; border-radius: 9px; border: none; font-family: var(--sans); font-size: .875rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: #475569; }
+  .btn-flag { background: rgba(245,158,11,.1); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+  .btn-blue { background: linear-gradient(135deg,#2563eb,#0891b2); color:#fff; box-shadow: 0 2px 14px rgba(37,99,235,.35); }
+  .btn-green { background: linear-gradient(135deg,#15803d,#0e7490); color:#fff; box-shadow: 0 2px 14px rgba(21,128,61,.35); }
+
+  /* ── SIDE PANEL ── */
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-section {
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+  }
+  .panel-title {
+    font-family: var(--mono);
+    font-size: .65rem;
+    color: var(--muted);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* Webcam feed */
+  .cam-wrap {
+    position: relative;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  #camVideo { width: 100%; height: 100%; object-fit: cover; }
+  .cam-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 8px;
+    background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%);
+  }
+  .cam-label {
+    font-family: var(--mono);
+    font-size: .6rem;
+    color: rgba(255,255,255,.7);
+  }
+  .cam-status {
+    display: flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: .6rem;
+    color: #86efac;
+  }
+  .cam-dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; animation: pulse-dot 1.5s infinite; }
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .face-absent-overlay {
+    position: absolute; inset: 0;
+    background: rgba(239,68,68,.2);
+    display: none;
+    align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: #fca5a5;
+    text-align: center;
+    padding: 10px;
+    border: 2px solid rgba(239,68,68,.5);
+    border-radius: 10px;
+  }
+  .face-absent-overlay.show { display: flex; }
+
+  /* Violations log */
+  .violations-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .log-entry {
+    display: flex;
+    gap: 9px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: .75rem;
+    line-height: 1.4;
+  }
+  .log-time {
+    font-family: var(--mono);
+    font-size: .65rem;
+    color: var(--muted);
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .log-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .log-dot.warn { background: var(--yellow); }
+  .log-dot.danger { background: var(--red); }
+  .log-dot.info { background: var(--blue); }
+  .log-msg { color: #cbd5e1; }
+
+  /* Alert banner */
+  .alert-banner {
+    position: fixed;
+    top: 70px; left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--red);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: .875rem;
+    z-index: 999;
+    opacity: 0;
+    transition: all .3s;
+    pointer-events: none;
+    box-shadow: 0 4px 30px rgba(239,68,68,.5);
+    max-width: 90vw;
+    text-align: center;
+  }
+  .alert-banner.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Submit modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 200;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+  }
+  .modal h2 { font-size: 1.3rem; margin-bottom: 10px; }
+  .modal p { color: var(--muted); font-size: .9rem; line-height: 1.5; margin-bottom: 8px; }
+  .modal-stats {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 14px;
+    margin: 18px 0;
+    font-family: var(--mono);
+    font-size: .78rem;
+    color: #94a3b8;
+    line-height: 2;
+    text-align: left;
+  }
+  .modal-stats span { color: var(--cyan); }
+  .modal-btns { display: flex; gap: 10px; justify-content: center; }
+  .terminate-msg {
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 10px;
+    padding: 14px;
+    margin: 14px 0;
+    font-size: .85rem;
+    color: #fca5a5;
+  }
+
+  /* Fullscreen prompt */
+  .fullscreen-prompt {
+    position: fixed; inset: 0;
+    background: rgba(7,11,20,.95);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+    padding: 24px;
+  }
+  .fullscreen-prompt h2 { font-size: 1.4rem; }
+  .fullscreen-prompt p { color: var(--muted); max-width: 360px; line-height: 1.5; }
+
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .side-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Alert banner -->
+<div class="alert-banner" id="alertBanner"></div>
+
+<!-- Fullscreen prompt -->
+<div class="fullscreen-prompt" id="fullscreenPrompt">
+  <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+    <rect x="4" y="4" width="48" height="48" rx="14" stroke="#3b82f6" stroke-width="2"/>
+    <path d="M20 20h-6v6M36 20h6v6M20 36H14v-6M36 36h6v-6" stroke="#22d3ee" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="28" cy="28" r="5" fill="#3b82f6"/>
+  </svg>
+  <h2>Fullscreen Required</h2>
+  <p>This exam must be taken in fullscreen mode. Do not exit fullscreen during the exam — it will be logged as a violation.</p>
+  <button class="btn btn-blue" onclick="enterFullscreen()">Enter Fullscreen & Begin Exam</button>
+</div>
+
+<!-- Submit modal -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <h2>Submit Exam?</h2>
+    <p>You are about to submit your answers. This action cannot be undone.</p>
+    <div class="modal-stats" id="modalStats"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal()">Review</button>
+      <button class="btn btn-green" onclick="finalSubmit()">Submit Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Terminate modal -->
+<div class="modal-overlay" id="terminateModal">
+  <div class="modal">
+    <h2 style="color:var(--red)">⚠ Exam Terminated</h2>
+    <p>Your exam has been terminated due to excessive violations.</p>
+    <div class="terminate-msg" id="terminateReason"></div>
+    <div class="modal-stats" id="terminateStats"></div>
+    <button class="btn btn-ghost" onclick="window.location.href='login.html'" style="margin-top:10px">Back to Login</button>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">IEPL <span>Proctor</span></div>
+    <div class="student-badge" id="studentBadge">STU001</div>
+  </div>
+  <div class="topbar-right">
+    <div class="threat-wrap">
+      <div class="threat-label">Threat</div>
+      <div class="threat-bar-outer">
+        <div class="threat-bar-inner" id="threatBar"></div>
+      </div>
+      <div class="threat-score" id="threatScore">0%</div>
+    </div>
+    <div class="timer-display" id="timerDisplay">45:00</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <!-- EXAM AREA -->
+  <div class="exam-area">
+    <div class="exam-meta">
+      <div class="exam-title">Computer Science — Unit Test I</div>
+      <div class="question-nav" id="questionNav"></div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="exam-actions">
+      <button class="btn btn-ghost" onclick="prevQ()">← Prev</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-flag" onclick="flagQ()">⚑ Flag</button>
+        <button class="btn btn-blue" onclick="nextQ()">Next →</button>
+      </div>
+      <button class="btn btn-green" onclick="openSubmitModal()">Submit Exam</button>
+    </div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side-panel">
+    <div class="panel-section">
+      <div class="panel-title">📷 Candidate Feed</div>
+      <div class="cam-wrap">
+        <video id="camVideo" autoplay muted playsinline></video>
+        <div class="cam-overlay">
+          <div class="cam-label">LIVE · RECORDED</div>
+          <div class="cam-status"><div class="cam-dot"></div> ACTIVE</div>
+        </div>
+        <div class="face-absent-overlay" id="faceAbsentOverlay">⚠ Face Not Detected<br>Please look at the screen</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">⚠ Violation Log</div>
+    </div>
+    <div class="violations-log" id="violationsLog">
+      <div class="log-entry">
+        <div class="log-dot info"></div>
+        <div>
+          <div class="log-time">SYSTEM</div>
+          <div class="log-msg">Proctoring session started. All activity is monitored.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const QUESTIONS = [
+  { q: "Which data structure uses LIFO (Last In First Out) order?", opts: ["Queue","Stack","Linked List","Tree"], ans: 1 },
+  { q: "What is the time complexity of binary search?", opts: ["O(n)","O(n²)","O(log n)","O(1)"], ans: 2 },
+  { q: "Which keyword is used to define a function in Python?", opts: ["function","def","func","define"], ans: 1 },
+  { q: "What does HTML stand for?", opts: ["HyperText Markup Language","High Tech Machine Language","HyperText Machine Logic","Home Tool Markup Language"], ans: 0 },
+  { q: "Which protocol is used for secure web communication?", opts: ["HTTP","FTP","HTTPS","SMTP"], ans: 2 },
+  { q: "Which sorting algorithm has the best average-case time complexity?", opts: ["Bubble Sort","Selection Sort","Merge Sort","Insertion Sort"], ans: 2 },
+  { q: "What is the output of print(2**10) in Python?", opts: ["20","100","1024","512"], ans: 2 },
+  { q: "In which layer of the OSI model does routing occur?", opts: ["Physical","Data Link","Network","Transport"], ans: 2 },
+  { q: "Which SQL command is used to retrieve data?", opts: ["INSERT","SELECT","UPDATE","DELETE"], ans: 1 },
+  { q: "What does RAM stand for?", opts: ["Read Access Memory","Random Access Memory","Rapid Access Module","Read And Modify"], ans: 1 },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────
+const user = JSON.parse(sessionStorage.getItem('iepl_user') || '{"id":"STU001","name":"Student","role":"student"}');
+let current = 0;
+const answers = new Array(QUESTIONS.length).fill(-1);
+const flagged = new Array(QUESTIONS.length).fill(false);
+let violations = [];
+let tabSwitchCount = 0;
+let fullscreenExitCount = 0;
+let inactivityTimer = null;
+let lastActivity = Date.now();
+let threatLevel = 0;
+let examSeconds = 45 * 60;
+let timerInterval;
+let examStarted = false;
+const MAX_VIOLATIONS = 10;
+
+// ── UI HELPERS ────────────────────────────────────────────────────────
+document.getElementById('studentBadge').textContent = `${user.id} · ${user.name}`;
+
+function showAlert(msg, dur = 3000) {
+  const el = document.getElementById('alertBanner');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+function logViolation(msg, level = 'warn') {
+  const now = new Date();
+  const t = now.toTimeString().split(' ')[0];
+  violations.push({ t, msg, level });
+  const log = document.getElementById('violationsLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<div class="log-dot ${level}"></div><div><div class="log-time">${t}</div><div class="log-msg">${msg}</div></div>`;
+  log.prepend(entry);
+  updateThreat();
+}
+
+function updateThreat() {
+  threatLevel = Math.min(100, violations.length * 10);
+  const bar = document.getElementById('threatBar');
+  const score = document.getElementById('threatScore');
+  bar.style.width = threatLevel + '%';
+  const color = threatLevel < 30 ? '#22c55e' : threatLevel < 60 ? '#f59e0b' : '#ef4444';
+  bar.style.background = color;
+  score.style.color = color;
+  score.textContent = threatLevel + '%';
+  if (threatLevel >= 100) terminateExam('Suspicious activity threshold exceeded (10+ violations detected).');
+}
+
+// ── QUESTIONS ─────────────────────────────────────────────────────────
+function renderNav() {
+  const nav = document.getElementById('questionNav');
+  nav.innerHTML = '';
+  QUESTIONS.forEach((_, i) => {
+    const b = document.createElement('button');
+    b.className = 'q-btn' + (i === current ? ' current' : answers[i] >= 0 ? ' answered' : flagged[i] ? ' flagged' : '');
+    b.textContent = i + 1;
+    b.onclick = () => { current = i; renderQ(); renderNav(); };
+    nav.appendChild(b);
+  });
+}
+
+function renderQ() {
+  const qd = QUESTIONS[current];
+  const letters = ['A','B','C','D'];
+  document.getElementById('questionCard').innerHTML = `
+    <div class="q-meta">
+      <div class="q-num">QUESTION ${current + 1} / ${QUESTIONS.length}</div>
+      <div class="q-marks">2 marks</div>
+    </div>
+    <div class="q-text">${qd.q}</div>
+    <div class="options">
+      ${qd.opts.map((opt, i) => `
+        <label class="option-label ${answers[current] === i ? 'selected' : ''}" onclick="selectAns(${i})">
+          <input type="radio" name="opt" value="${i}" ${answers[current] === i ? 'checked' : ''}>
+          <div class="option-letter">${letters[i]}</div>
+          ${opt}
+        </label>`).join('')}
+    </div>`;
+  resetInactivity();
+}
+
+function selectAns(i) {
+  answers[current] = i;
+  renderQ();
+  renderNav();
+  resetInactivity();
+}
+
+function nextQ() { if (current < QUESTIONS.length - 1) { current++; renderQ(); renderNav(); } }
+function prevQ() { if (current > 0) { current--; renderQ(); renderNav(); } }
+function flagQ() {
+  flagged[current] = !flagged[current];
+  showAlert(flagged[current] ? '⚑ Question flagged for review' : 'Flag removed');
+  renderNav();
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────
+function startTimer() {
+  timerInterval = setInterval(() => {
+    examSeconds--;
+    const m = Math.floor(examSeconds / 60);
+    const s = examSeconds % 60;
+    const el = document.getElementById('timerDisplay');
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    el.className = 'timer-display' + (examSeconds < 300 ? ' critical' : examSeconds < 600 ? ' warning' : '');
+    if (examSeconds <= 0) { clearInterval(timerInterval); finalSubmit(); }
+  }, 1000);
+}
+
+// ── PROCTORING LOGIC ──────────────────────────────────────────────────
+
+// 1. Tab switch detection
+document.addEventListener('visibilitychange', () => {
+  if (!examStarted) return;
+  if (document.hidden) {
+    tabSwitchCount++;
+    logViolation(`Tab switch #${tabSwitchCount} detected — candidate left exam window`, 'danger');
+    showAlert(`⚠ Tab switch detected! (${tabSwitchCount} time${tabSwitchCount>1?'s':''})`, 4000);
+    if (tabSwitchCount >= 3) logViolation('Multiple tab switches — high-risk behaviour flagged', 'danger');
+  }
+});
+
+// 2. Fullscreen detection
+document.addEventListener('fullscreenchange', () => {
+  if (!examStarted) return;
+  if (!document.fullscreenElement) {
+    fullscreenExitCount++;
+    logViolation(`Fullscreen exited #${fullscreenExitCount} — possible window manipulation`, 'danger');
+    showAlert('⚠ You exited fullscreen! Please re-enter fullscreen.', 5000);
+    document.getElementById('fullscreenPrompt').style.display = 'flex';
+    document.getElementById('fullscreenPrompt').style.display = 'flex';
+  }
+});
+
+// 3. Copy/Paste restriction
+document.addEventListener('copy', e => {
+  if (!examStarted) return;
+  e.preventDefault();
+  logViolation('Copy attempt blocked (Ctrl+C / selection)', 'warn');
+  showAlert('⛔ Copying is not allowed during the exam!');
+});
+document.addEventListener('paste', e => {
+  if (!examStarted) return;
+  e.preventDefault();
+  logViolation('Paste attempt blocked', 'warn');
+  showAlert('⛔ Pasting is not allowed during the exam!');
+});
+document.addEventListener('cut', e => {
+  if (!examStarted) return;
+  e.preventDefault();
+  logViolation('Cut attempt blocked', 'warn');
+});
+document.addEventListener('contextmenu', e => {
+  if (!examStarted) return;
+  e.preventDefault();
+  logViolation('Right-click menu blocked', 'warn');
+});
+
+// 4. Keyboard shortcuts block
+document.addEventListener('keydown', e => {
+  if (!examStarted) return;
+  const blocked = [
+    e.ctrlKey && ['c','v','u','a','s','p','f'].includes(e.key.toLowerCase()),
+    e.key === 'F12',
+    e.altKey && e.key === 'Tab',
+    e.metaKey,
+  ];
+  if (blocked.some(Boolean)) {
+    e.preventDefault();
+    logViolation(`Blocked keyboard shortcut: ${e.ctrlKey?'Ctrl+':''}${e.altKey?'Alt+':''}${e.key}`, 'warn');
+  }
+  resetInactivity();
+});
+
+// 5. Inactivity detection
+function resetInactivity() {
+  lastActivity = Date.now();
+  clearTimeout(inactivityTimer);
+  if (examStarted) {
+    inactivityTimer = setTimeout(() => {
+      logViolation('Candidate inactive for 2+ minutes — suspicious', 'warn');
+      showAlert('⚠ Inactivity detected! Please remain active.', 5000);
+    }, 120000); // 2 minutes
+  }
+}
+
+// 6. Rapid-answer detection
+let answerTimes = [];
+function trackAnswerSpeed() {
+  const now = Date.now();
+  answerTimes.push(now);
+  if (answerTimes.length >= 3) {
+    const last3 = answerTimes.slice(-3);
+    const span = last3[2] - last3[0];
+    if (span < 6000) { // 3 answers in < 6 seconds
+      logViolation('Rapid answering detected — 3 answers in < 6 seconds', 'danger');
+      showAlert('⚠ Unusually fast answering detected and logged!', 4000);
+    }
+  }
+}
+
+// Override selectAns to track speed
+const _origSelect = selectAns;
+window.selectAns = function(i) { trackAnswerSpeed(); _origSelect(i); };
+
+// 7. Webcam
+async function startWebcam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+    document.getElementById('camVideo').srcObject = stream;
+    // Simulate face absence detection (in a real app, use TensorFlow.js)
+    simulateFaceDetection();
+  } catch {
+    logViolation('Webcam access denied — cannot verify candidate', 'danger');
+    showAlert('⚠ Camera access required for this exam!', 6000);
+  }
+}
+
+// Simulated face detection (would use TensorFlow.js blazeface in production)
+function simulateFaceDetection() {
+  setInterval(() => {
+    if (!examStarted) return;
+    // 5% chance of "face absent" simulation per 8s
+    if (Math.random() < 0.05) {
+      document.getElementById('faceAbsentOverlay').classList.add('show');
+      logViolation('Face not detected in camera frame', 'danger');
+      showAlert('⚠ Face not detected! Please look at the screen.', 4000);
+      setTimeout(() => {
+        document.getElementById('faceAbsentOverlay').classList.remove('show');
+      }, 3000);
+    }
+  }, 8000);
+}
+
+// 8. Multiple window/session detection (via BroadcastChannel)
+const bc = new BroadcastChannel('iepl_exam');
+bc.onmessage = (e) => {
+  if (e.data === 'exam_session_active') {
+    logViolation('Second session/window detected — possible multi-device cheating', 'danger');
+    showAlert('⚠ Multiple sessions detected!', 5000);
+  }
+};
+bc.postMessage('exam_session_active');
+
+// ── FULLSCREEN ────────────────────────────────────────────────────────
+function enterFullscreen() {
+  document.documentElement.requestFullscreen().then(() => {
+    document.getElementById('fullscreenPrompt').style.display = 'none';
+    examStarted = true;
+    startTimer();
+    resetInactivity();
+    startWebcam();
+    logViolation('Exam session initiated — monitoring active', 'info');
+  }).catch(() => {
+    // Fallback if fullscreen not available (e.g. embedded)
+    document.getElementById('fullscreenPrompt').style.display = 'none';
+    examStarted = true;
+    startTimer();
+    resetInactivity();
+    startWebcam();
+  });
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────
+function openSubmitModal() {
+  const answered = answers.filter(a => a >= 0).length;
+  document.getElementById('modalStats').innerHTML = `
+    Answered : <span>${answered} / ${QUESTIONS.length}</span><br>
+    Unanswered : <span>${QUESTIONS.length - answered}</span><br>
+    Flagged : <span>${flagged.filter(Boolean).length}</span><br>
+    Violations : <span>${violations.length}</span><br>
+    Threat Level : <span>${threatLevel}%</span>`;
+  document.getElementById('submitModal').classList.add('show');
+}
+function closeModal() { document.getElementById('submitModal').classList.remove('show'); }
+
+function finalSubmit() {
+  clearInterval(timerInterval);
+  const answered = answers.filter(a => a >= 0).length;
+  const correct = answers.filter((a, i) => a === QUESTIONS[i].ans).length;
+  const score = (correct / QUESTIONS.length) * 100;
+  const report = {
+    studentId: user.id,
+    name: user.name,
+    score,
+    correct,
+    total: QUESTIONS.length,
+    violations: violations.length,
+    threatLevel,
+    tabSwitches: tabSwitchCount,
+    fullscreenExits: fullscreenExitCount,
+    log: violations,
+    submittedAt: new Date().toISOString()
+  };
+  sessionStorage.setItem('iepl_report', JSON.stringify(report));
+  window.location.href = 'report.html';
+}
+
+function terminateExam(reason) {
+  clearInterval(timerInterval);
+  document.getElementById('terminateReason').textContent = reason;
+  const answered = answers.filter(a => a >= 0).length;
+  document.getElementById('terminateStats').innerHTML = `
+    Violations logged : <span style="color:var(--red)">${violations.length}</span><br>
+    Tab switches : <span>${tabSwitchCount}</span><br>
+    Threat level : <span>${threatLevel}%</span><br>
+    Answered : <span>${answered} / ${QUESTIONS.length}</span>`;
+  document.getElementById('terminateModal').classList.add('show');
+  logViolation('EXAM TERMINATED BY PROCTOR SYSTEM', 'danger');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+if (!sessionStorage.getItem('iepl_user')) window.location.href = 'login.html';
+renderQ();
+renderNav();
+</script>
+</body>
+</html>

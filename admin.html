@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEPL — Examiner Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#070B14; --surface:#0D1525; --border:#1A2640;
+    --blue:#3B82F6; --cyan:#22D3EE; --green:#22C55E;
+    --yellow:#F59E0B; --red:#EF4444;
+    --text:#E2E8F0; --muted:#64748B;
+    --mono:'JetBrains Mono',monospace; --sans:'Space Grotesk',sans-serif;
+  }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); font-family:var(--sans); color:var(--text); min-height:100vh; }
+
+  .topbar {
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:0 32px; height:60px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:10;
+  }
+  .topbar-logo { font-size:.9rem; font-weight:700; }
+  .topbar-logo span { color:var(--cyan); }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .admin-badge {
+    background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.3);
+    padding:3px 10px; border-radius:20px;
+    font-family:var(--mono); font-size:.7rem; color:#f87171;
+  }
+  .btn { padding:9px 18px; border-radius:9px; border:none; font-family:var(--sans); font-size:.83rem; font-weight:600; cursor:pointer; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--text); }
+  .btn-blue { background:linear-gradient(135deg,#2563eb,#0891b2); color:#fff; }
+  .btn-red { background:linear-gradient(135deg,#b91c1c,#7c3aed); color:#fff; }
+
+  .page { max-width:1100px; margin:0 auto; padding:28px 24px; }
+
+  .page-header { margin-bottom:28px; }
+  .page-header h1 { font-size:1.3rem; font-weight:700; }
+  .page-header p { color:var(--muted); font-size:.88rem; margin-top:4px; }
+
+  /* Stats row */
+  .stats-row {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:14px; margin-bottom:24px;
+  }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:18px 20px;
+  }
+  .stat-label { font-family:var(--mono); font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+  .stat-value { font-size:1.8rem; font-weight:700; line-height:1; }
+  .stat-sub { font-size:.72rem; color:var(--muted); margin-top:4px; }
+
+  /* Live monitoring grid */
+  .section-title {
+    font-family:var(--mono); font-size:.68rem; color:var(--muted);
+    letter-spacing:.1em; text-transform:uppercase; margin-bottom:14px;
+  }
+
+  .candidates-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:14px; margin-bottom:28px;
+  }
+  .candidate-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:16px;
+    position:relative; overflow:hidden;
+    transition:border-color .2s;
+  }
+  .candidate-card:hover { border-color: #334155; }
+  .candidate-card.flagged { border-color:rgba(245,158,11,.4); }
+  .candidate-card.danger  { border-color:rgba(239,68,68,.4); }
+  .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .c-name { font-weight:600; font-size:.88rem; }
+  .c-id { font-family:var(--mono); font-size:.65rem; color:var(--muted); margin-top:2px; }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pd 1.5s infinite; }
+  @keyframes pd { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  .c-progress { margin-bottom:10px; }
+  .c-prog-bar-outer { width:100%; height:5px; background:#1e293b; border-radius:3px; overflow:hidden; margin-top:4px; }
+  .c-prog-bar { height:100%; background:var(--blue); border-radius:3px; }
+  .c-prog-label { display:flex; justify-content:space-between; font-family:var(--mono); font-size:.65rem; color:var(--muted); }
+
+  .c-threat-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .c-threat-bar-outer { flex:1; height:5px; background:#1e293b; border-radius:3px; overflow:hidden; }
+  .c-threat-bar { height:100%; border-radius:3px; }
+  .c-violations { font-family:var(--mono); font-size:.72rem; }
+
+  .c-flags { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .flag-chip {
+    padding:2px 7px; border-radius:5px;
+    font-family:var(--mono); font-size:.6rem;
+  }
+  .chip-warn { background:rgba(245,158,11,.12); color:#fbbf24; }
+  .chip-danger { background:rgba(239,68,68,.12); color:#f87171; }
+  .chip-ok { background:rgba(34,197,94,.1); color:#4ade80; }
+
+  .terminate-btn {
+    width:100%; padding:7px; margin-top:10px;
+    background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3);
+    border-radius:8px; color:#f87171;
+    font-family:var(--sans); font-size:.78rem; font-weight:600;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .terminate-btn:hover { background:rgba(239,68,68,.2); }
+
+  /* Flags table */
+  .flags-table { width:100%; border-collapse:collapse; }
+  .flags-table th {
+    font-family:var(--mono); font-size:.62rem; color:var(--muted);
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:8px 14px; text-align:left; border-bottom:1px solid var(--border);
+  }
+  .flags-table td { padding:10px 14px; font-size:.82rem; border-bottom:1px solid rgba(255,255,255,.04); }
+  .flags-table tr:last-child td { border-bottom:none; }
+
+  .badge { padding:2px 8px; border-radius:5px; font-family:var(--mono); font-size:.65rem; }
+  .b-warn { background:rgba(245,158,11,.12); color:#fbbf24; }
+  .b-danger { background:rgba(239,68,68,.12); color:#f87171; }
+  .b-ok { background:rgba(34,197,94,.1); color:#4ade80; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:24px; }
+
+  .refresh-note { font-family:var(--mono); font-size:.68rem; color:var(--muted); margin-bottom:18px; }
+
+  @media (max-width:640px) { .stats-row { grid-template-columns:1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">IEPL <span>Examiner Dashboard</span></div>
+  <div class="topbar-right">
+    <div class="admin-badge" id="adminBadge">EXAMINER</div>
+    <button class="btn btn-ghost" onclick="window.location.href='login.html'">Logout</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h1>Live Exam Monitoring</h1>
+    <p>Computer Science — Unit Test I &nbsp;·&nbsp; Real-time proctoring view</p>
+  </div>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="refresh-note" id="refreshNote"></div>
+
+  <div class="section-title">Candidate Status — Live</div>
+  <div class="candidates-grid" id="candidatesGrid"></div>
+
+  <div class="card">
+    <div class="section-title">Flagged Events (All Candidates)</div>
+    <table class="flags-table" id="flagsTable">
+      <thead>
+        <tr>
+          <th>Candidate</th><th>Time</th><th>Severity</th><th>Event</th>
+        </tr>
+      </thead>
+      <tbody id="flagsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const user = JSON.parse(sessionStorage.getItem('iepl_user') || '{"id":"ADMIN01","name":"Examiner","role":"admin"}');
+document.getElementById('adminBadge').textContent = `${user.id} · ${user.name}`;
+
+if (user.role !== 'admin') window.location.href = 'login.html';
+
+// Simulated live candidate data
+const CANDIDATES = [
+  { id:'STU001', name:'Arjun Reddy',       progress:70, threat:10, tabSwitches:0, violations:1, status:'active',   flags:[] },
+  { id:'STU002', name:'Priya Sharma',      progress:50, threat:30, tabSwitches:1, violations:3, status:'flagged',  flags:['Tab Switch'] },
+  { id:'STU003', name:'Mohammed Rizwan',   progress:90, threat:5,  tabSwitches:0, violations:0, status:'active',   flags:[] },
+  { id:'STU004', name:'Ananya Krishnan',   progress:60, threat:60, tabSwitches:2, violations:6, status:'danger',   flags:['Tab Switch ×2','Copy Attempt','Rapid Answer'] },
+  { id:'STU005', name:'Karan Mehta',       progress:30, threat:20, tabSwitches:0, violations:2, status:'flagged',  flags:['Inactivity'] },
+  { id:'STU006', name:'Divya Nair',        progress:80, threat:0,  tabSwitches:0, violations:0, status:'active',   flags:[] },
+  { id:'STU007', name:'Sai Venkat',        progress:45, threat:80, tabSwitches:3, violations:8, status:'danger',   flags:['Tab Switch ×3','FS Exit','Paste Attempt','Rapid Answer'] },
+  { id:'STU008', name:'Ritu Agarwal',      progress:65, threat:15, tabSwitches:0, violations:1, status:'active',   flags:['Inactivity'] },
+];
+
+const ALL_FLAGS = [
+  { cid:'STU002', name:'Priya Sharma',    t:'10:08:34', level:'danger', msg:'Tab switch #1 detected' },
+  { cid:'STU004', name:'Ananya Krishnan', t:'10:10:12', level:'danger', msg:'Tab switch #1 detected' },
+  { cid:'STU004', name:'Ananya Krishnan', t:'10:12:44', level:'warn',   msg:'Copy attempt blocked' },
+  { cid:'STU005', name:'Karan Mehta',     t:'10:14:05', level:'warn',   msg:'Candidate inactive 2+ minutes' },
+  { cid:'STU004', name:'Ananya Krishnan', t:'10:15:30', level:'danger', msg:'Tab switch #2 detected' },
+  { cid:'STU007', name:'Sai Venkat',      t:'10:16:22', level:'danger', msg:'Rapid answering — 3 in <6s' },
+  { cid:'STU007', name:'Sai Venkat',      t:'10:17:10', level:'danger', msg:'Tab switch #2 detected' },
+  { cid:'STU007', name:'Sai Venkat',      t:'10:18:45', level:'danger', msg:'Fullscreen exit #1' },
+  { cid:'STU008', name:'Ritu Agarwal',    t:'10:20:00', level:'warn',   msg:'Candidate inactive 2+ minutes' },
+  { cid:'STU007', name:'Sai Venkat',      t:'10:21:33', level:'danger', msg:'Tab switch #3 — terminated flagged' },
+];
+
+// Stats
+const total   = CANDIDATES.length;
+const active  = CANDIDATES.filter(c=>c.status==='active').length;
+const flagged = CANDIDATES.filter(c=>c.status==='flagged').length;
+const danger  = CANDIDATES.filter(c=>c.status==='danger').length;
+const totViol = CANDIDATES.reduce((a,c)=>a+c.violations,0);
+
+document.getElementById('statsRow').innerHTML = `
+  <div class="stat-card">
+    <div class="stat-label">Total Candidates</div>
+    <div class="stat-value">${total}</div>
+    <div class="stat-sub">registered for exam</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active / Clean</div>
+    <div class="stat-value" style="color:var(--green)">${active}</div>
+    <div class="stat-sub">no violations</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Flagged</div>
+    <div class="stat-value" style="color:var(--yellow)">${flagged}</div>
+    <div class="stat-sub">minor violations</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">High Risk</div>
+    <div class="stat-value" style="color:var(--red)">${danger}</div>
+    <div class="stat-sub">multiple violations</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Violations</div>
+    <div class="stat-value" style="color:var(--yellow)">${totViol}</div>
+    <div class="stat-sub">across all candidates</div>
+  </div>
+`;
+
+// Candidate cards
+document.getElementById('candidatesGrid').innerHTML = CANDIDATES.map(c => {
+  const threatColor = c.threat < 30 ? '#22c55e' : c.threat < 60 ? '#f59e0b' : '#ef4444';
+  return `<div class="candidate-card ${c.status==='danger'?'danger':c.status==='flagged'?'flagged':''}">
+    <div class="card-header">
+      <div>
+        <div class="c-name">${c.name}</div>
+        <div class="c-id">${c.id}</div>
+      </div>
+      <div class="live-dot" style="background:${c.status==='danger'?'#ef4444':c.status==='flagged'?'#f59e0b':'#22c55e'}"></div>
+    </div>
+    <div class="c-progress">
+      <div class="c-prog-label"><span>Progress</span><span>${c.progress}%</span></div>
+      <div class="c-prog-bar-outer"><div class="c-prog-bar" style="width:${c.progress}%"></div></div>
+    </div>
+    <div class="c-threat-row">
+      <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted)">Threat</span>
+      <div class="c-threat-bar-outer">
+        <div class="c-threat-bar" style="width:${c.threat}%;background:${threatColor}"></div>
+      </div>
+      <div class="c-violations" style="color:${c.violations>0?threatColor:'var(--muted)'}">
+        ${c.violations}v
+      </div>
+    </div>
+    <div class="c-flags">
+      ${c.flags.length === 0
+        ? '<span class="flag-chip chip-ok">✔ Clean</span>'
+        : c.flags.map(f=>`<span class="flag-chip ${c.status==='danger'?'chip-danger':'chip-warn'}">${f}</span>`).join('')}
+    </div>
+    ${c.status === 'danger' ? `<button class="terminate-btn" onclick="terminateCandidate('${c.id}','${c.name}')">⚠ Terminate Exam</button>` : ''}
+  </div>`;
+}).join('');
+
+// Flags table
+document.getElementById('flagsBody').innerHTML = ALL_FLAGS.map(f=>`
+  <tr>
+    <td><strong>${f.name}</strong> <span style="font-family:var(--mono);font-size:.65rem;color:var(--muted)">${f.cid}</span></td>
+    <td style="font-family:var(--mono);color:var(--muted)">${f.t}</td>
+    <td><span class="badge b-${f.level}">${f.level.toUpperCase()}</span></td>
+    <td>${f.msg}</td>
+  </tr>`).join('');
+
+// Refresh timestamp
+function updateRefresh() {
+  document.getElementById('refreshNote').textContent =
+    `⟳ Last updated: ${new Date().toLocaleTimeString()} — auto-refreshes every 30s`;
+}
+updateRefresh();
+setInterval(updateRefresh, 30000);
+
+function terminateCandidate(id, name) {
+  if (confirm(`Terminate exam for ${name} (${id})?\n\nThis will end their session and flag for review.`)) {
+    alert(`Exam terminated for ${name}. Report has been generated and flagged for manual review.`);
+  }
+}
+</script>
+</body>
+</html>

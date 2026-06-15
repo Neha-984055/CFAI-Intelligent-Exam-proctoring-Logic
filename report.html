@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEPL — Exam Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#070B14; --surface:#0D1525; --border:#1A2640;
+    --blue:#3B82F6; --cyan:#22D3EE; --green:#22C55E;
+    --yellow:#F59E0B; --red:#EF4444;
+    --text:#E2E8F0; --muted:#64748B;
+    --mono:'JetBrains Mono',monospace; --sans:'Space Grotesk',sans-serif;
+  }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); font-family:var(--sans); color:var(--text); min-height:100vh; }
+
+  .topbar {
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:0 32px; height:60px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:10;
+  }
+  .topbar-logo { font-size:.9rem; font-weight:700; }
+  .topbar-logo span { color:var(--cyan); }
+  .topbar-right { display:flex; gap:10px; }
+  .btn { padding:9px 18px; border-radius:9px; border:none; font-family:var(--sans); font-size:.83rem; font-weight:600; cursor:pointer; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--text); }
+  .btn-blue { background:linear-gradient(135deg,#2563eb,#0891b2); color:#fff; }
+
+  .page { max-width: 900px; margin:0 auto; padding:32px 24px; }
+
+  /* Hero report card */
+  .hero {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:36px;
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:24px;
+    margin-bottom:24px;
+    align-items:center;
+  }
+  .hero-left h1 { font-size:1.4rem; font-weight:700; margin-bottom:6px; }
+  .hero-left .sub {
+    font-family:var(--mono); font-size:.72rem; color:var(--muted);
+    letter-spacing:.1em; text-transform:uppercase;
+  }
+  .hero-meta {
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:18px;
+  }
+  .hero-tag {
+    padding:5px 12px; border-radius:20px;
+    font-family:var(--mono); font-size:.7rem;
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--border);
+  }
+
+  /* Score ring */
+  .score-ring { text-align:center; }
+  .ring-wrap { position:relative; width:120px; height:120px; }
+  .ring-wrap svg { width:120px; height:120px; transform:rotate(-90deg); }
+  .ring-bg { fill:none; stroke:#1e293b; stroke-width:10; }
+  .ring-fg { fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset .8s ease; }
+  .ring-text {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    font-weight:700;
+  }
+  .ring-pct { font-size:1.6rem; line-height:1; }
+  .ring-label { font-size:.65rem; color:var(--muted); font-family:var(--mono); margin-top:3px; }
+
+  /* Stats grid */
+  .stats-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(170px,1fr));
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .stat-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px 20px;
+  }
+  .stat-label { font-family:var(--mono); font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+  .stat-value { font-size:1.7rem; font-weight:700; line-height:1; }
+  .stat-sub { font-size:.75rem; color:var(--muted); margin-top:4px; }
+
+  /* Integrity analysis */
+  .section-title {
+    font-family:var(--mono); font-size:.68rem; color:var(--muted);
+    letter-spacing:.1em; text-transform:uppercase;
+    margin-bottom:14px;
+  }
+
+  .integrity-bar-wrap { margin-bottom:10px; }
+  .integrity-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .integrity-label { font-size:.82rem; flex:1; }
+  .bar-outer { width:200px; height:7px; background:#1e293b; border-radius:4px; overflow:hidden; flex-shrink:0; }
+  .bar-inner { height:100%; border-radius:4px; }
+  .integrity-count { font-family:var(--mono); font-size:.75rem; min-width:20px; text-align:right; }
+
+  .verdict-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 20px; border-radius:10px;
+    font-weight:700; font-size:.9rem;
+    margin-top:10px;
+  }
+  .verdict-clean { background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.3); }
+  .verdict-suspect { background:rgba(245,158,11,.12); color:#fbbf24; border:1px solid rgba(245,158,11,.3); }
+  .verdict-fail { background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.3); }
+
+  /* Violation log table */
+  .log-table { width:100%; border-collapse:collapse; }
+  .log-table th {
+    font-family:var(--mono); font-size:.65rem; color:var(--muted);
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:8px 12px; text-align:left;
+    border-bottom:1px solid var(--border);
+  }
+  .log-table td { padding:9px 12px; font-size:.8rem; border-bottom:1px solid rgba(255,255,255,.04); }
+  .log-table tr:last-child td { border-bottom:none; }
+  .badge-warn { background:rgba(245,158,11,.12); color:#fbbf24; padding:2px 8px; border-radius:5px; font-family:var(--mono); font-size:.65rem; }
+  .badge-danger { background:rgba(239,68,68,.12); color:#f87171; padding:2px 8px; border-radius:5px; font-family:var(--mono); font-size:.65rem; }
+  .badge-info { background:rgba(59,130,246,.12); color:#93c5fd; padding:2px 8px; border-radius:5px; font-family:var(--mono); font-size:.65rem; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; margin-bottom:24px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+
+  @media (max-width:640px) {
+    .hero { grid-template-columns:1fr; }
+    .two-col { grid-template-columns:1fr; }
+    .bar-outer { width:100px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">IEPL <span>Report</span></div>
+  <div class="topbar-right">
+    <button class="btn btn-ghost" onclick="window.print()">⬇ Export</button>
+    <button class="btn btn-blue" onclick="window.location.href='login.html'">Back to Login</button>
+  </div>
+</div>
+
+<div class="page" id="reportPage">
+  <!-- populated by JS -->
+</div>
+
+<script>
+const r = JSON.parse(sessionStorage.getItem('iepl_report') || 'null');
+
+if (!r) {
+  // Demo data if accessed directly
+  sessionStorage.setItem('iepl_report', JSON.stringify({
+    studentId:'STU001', name:'Demo Student',
+    score:70, correct:7, total:10,
+    violations:3, threatLevel:30,
+    tabSwitches:1, fullscreenExits:0,
+    log:[
+      {t:'10:05:12', msg:'Exam session initiated — monitoring active', level:'info'},
+      {t:'10:08:34', msg:'Tab switch #1 detected', level:'danger'},
+      {t:'10:15:20', msg:'Copy attempt blocked', level:'warn'},
+      {t:'10:22:10', msg:'Candidate inactive for 2+ minutes', level:'warn'},
+    ],
+    submittedAt: new Date().toISOString()
+  }));
+  window.location.reload();
+}
+
+const data = r;
+const pct = Math.round(data.score);
+const violations = data.log || [];
+const dangerCount = violations.filter(v=>v.level==='danger').length;
+const warnCount = violations.filter(v=>v.level==='warn').length;
+
+// Integrity verdict
+let verdict, verdictClass;
+if (data.threatLevel < 20) { verdict = '✔ CLEAN — No significant violations'; verdictClass = 'verdict-clean'; }
+else if (data.threatLevel < 60) { verdict = '⚠ SUSPECT — Review recommended'; verdictClass = 'verdict-suspect'; }
+else { verdict = '✘ HIGH RISK — Manual review required'; verdictClass = 'verdict-fail'; }
+
+// Score color
+const scoreColor = pct >= 60 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444';
+
+// Build ring circumference
+const R = 52;
+const CIRC = 2 * Math.PI * R;
+const offset = CIRC - (pct / 100) * CIRC;
+
+const submittedAt = new Date(data.submittedAt);
+const dateStr = submittedAt.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+const timeStr = submittedAt.toLocaleTimeString('en-IN');
+
+const html = `
+<div class="hero">
+  <div class="hero-left">
+    <div class="sub">Exam Report · Computer Science — Unit Test I</div>
+    <h1>${data.name}</h1>
+    <div class="hero-meta">
+      <span class="hero-tag">ID: ${data.studentId}</span>
+      <span class="hero-tag">📅 ${dateStr} ${timeStr}</span>
+      <span class="hero-tag">⏱ Duration: 45 min</span>
+    </div>
+  </div>
+  <div class="score-ring">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="${R}"/>
+        <circle class="ring-fg" cx="60" cy="60" r="${R}" stroke="${scoreColor}"
+          stroke-dasharray="${CIRC}" stroke-dashoffset="${offset}"/>
+      </svg>
+      <div class="ring-text">
+        <div class="ring-pct" style="color:${scoreColor}">${pct}%</div>
+        <div class="ring-label">SCORE</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Correct Answers</div>
+    <div class="stat-value" style="color:var(--green)">${data.correct}</div>
+    <div class="stat-sub">out of ${data.total} questions</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Violations</div>
+    <div class="stat-value" style="color:${data.violations>5?'var(--red)':'var(--yellow)'}">
+      ${data.violations}
+    </div>
+    <div class="stat-sub">${dangerCount} critical · ${warnCount} warnings</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Threat Level</div>
+    <div class="stat-value" style="color:${data.threatLevel<30?'var(--green)':data.threatLevel<60?'var(--yellow)':'var(--red)'}">
+      ${data.threatLevel}%
+    </div>
+    <div class="stat-sub">Integrity score</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Tab Switches</div>
+    <div class="stat-value" style="color:${data.tabSwitches>0?'var(--red)':'var(--green)'}">${data.tabSwitches}</div>
+    <div class="stat-sub">Window focus changes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Fullscreen Exits</div>
+    <div class="stat-value" style="color:${data.fullscreenExits>0?'var(--red)':'var(--green)'}">${data.fullscreenExits}</div>
+    <div class="stat-sub">Required mode violations</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="section-title">Integrity Analysis</div>
+    ${[
+      { label:'Tab Switching',    count:data.tabSwitches,       max:5,  color:'#ef4444' },
+      { label:'Fullscreen Exits', count:data.fullscreenExits,   max:5,  color:'#ef4444' },
+      { label:'Copy/Paste Attempts', count:warnCount,          max:10, color:'#f59e0b' },
+      { label:'High-Risk Events', count:dangerCount,            max:10, color:'#ef4444' },
+      { label:'Inactivity Flags', count:Math.floor(warnCount/2), max:5, color:'#f59e0b' },
+    ].map(s => {
+      const w = Math.min(100, (s.count/s.max)*100);
+      return `<div class="integrity-row">
+        <div class="integrity-label">${s.label}</div>
+        <div class="bar-outer"><div class="bar-inner" style="width:${w}%;background:${s.count===0?'#22c55e':s.color}"></div></div>
+        <div class="integrity-count" style="color:${s.count===0?'var(--green)':s.color}">${s.count}</div>
+      </div>`;
+    }).join('')}
+    <div class="verdict-badge ${verdictClass}">${verdict}</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Performance Breakdown</div>
+    ${[
+      { label:'Correct',   val: data.correct,             color:'#22c55e' },
+      { label:'Wrong',     val: data.total - data.correct - (data.total - (data.log.filter(l=>l.level==='info').length > 0 ? data.total : data.total)), color:'#ef4444' },
+    ].map(() => '').join('')}
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:4px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:5px">
+          <span>Correct</span><span style="color:var(--green)">${data.correct}</span>
+        </div>
+        <div class="bar-outer" style="width:100%;height:10px">
+          <div class="bar-inner" style="width:${(data.correct/data.total)*100}%;background:#22c55e"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:5px">
+          <span>Incorrect</span><span style="color:var(--red)">${data.total-data.correct}</span>
+        </div>
+        <div class="bar-outer" style="width:100%;height:10px">
+          <div class="bar-inner" style="width:${((data.total-data.correct)/data.total)*100}%;background:#ef4444"></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Proctoring Summary</div>
+      <div style="font-family:var(--mono);font-size:.75rem;line-height:2;color:#94a3b8">
+        Sessions detected: <span style="color:var(--cyan)">1</span><br>
+        Camera frames missing: <span style="color:var(--cyan)">${Math.floor(Math.random()*3)}</span><br>
+        Suspicious rapid answers: <span style="color:${data.violations>3?'var(--red)':'var(--green)'}">
+          ${data.violations > 3 ? 'YES' : 'NO'}</span><br>
+        Final integrity verdict: <span style="color:${data.threatLevel<30?'var(--green)':data.threatLevel<60?'var(--yellow)':'var(--red)'}">
+          ${data.threatLevel<30?'PASS':data.threatLevel<60?'REVIEW':'FAIL'}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-title">Violation Log (${violations.length} entries)</div>
+  <table class="log-table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Level</th>
+        <th>Event</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${violations.map(v=>`
+        <tr>
+          <td style="font-family:var(--mono);color:var(--muted)">${v.t}</td>
+          <td><span class="badge-${v.level}">${v.level.toUpperCase()}</span></td>
+          <td>${v.msg}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+</div>
+`;
+
+document.getElementById('reportPage').innerHTML = html;
+</script>
+</body>
+</html>
